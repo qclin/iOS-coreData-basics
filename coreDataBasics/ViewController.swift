@@ -20,32 +20,50 @@ class ViewController: UIViewController {
         
         // Do any additional setup after loading the view, typically from a nib.
 
+        
+//        /// write then read data 
+//        do{
+//            try self.writeData()
+//            do{
+//                let person =  try self.readData()
+//                print("Successfully read the person")
+//                print(person.firstName ?? "")
+//                print(person.lastName ?? "")
+//                
+//                if let cars = person.cars?.allObjects as? [Car], cars.count > 0{
+//                    cars.enumerated().forEach{offset, car in
+//                        print("Car #\(offset + 1)")
+//                        print(car.maker ?? "")
+//                        print(car.model ?? "")
+//                    }
+//                }
+//
+//            }catch{
+//                print("Could not read the data")
+//
+//            }
+//        }catch{
+//            print("Could not write the data")
+//        }
 
+        // write 999 person in the background thread and then get count to check that it saved 
         
         do{
-            try self.writeData()
-            do{
-                let person =  try self.readData()
-                print("Successfully read the person")
-                print(person.firstName ?? "")
-                print(person.lastName ?? "")
-                
-                if let cars = person.cars?.allObjects as? [Car], cars.count > 0{
-                    cars.enumerated().forEach{offset, car in
-                        print("Car #\(offset + 1)")
-                        print(car.maker ?? "")
-                        print(car.model ?? "")
-                    }
+            try self.writeManyPersonObjectsToDataBase(completion: {[weak self] in
+            
+                guard let strongSelf = self else {return}
+                do{
+                    let count = try strongSelf.countOfPersonObjectsWritten()
+                    print(count)
+                }catch{
+                    print("Could not count the objects in the database")
                 }
-
-            }catch{
-                print("Could not read the data")
-
-            }
+            })
         }catch{
-            print("Could not write the data")
+            print("Could not write the data ")
         }
-
+        
+        
     }
 
     override func didReceiveMemoryWarning() {
@@ -125,6 +143,45 @@ class ViewController: UIViewController {
         request.relationshipKeyPathsForPrefetching = ["cars"]
         request.predicate = NSPredicate(format:"ANY cars.maker ==[c] %@", argumentArray: [maker])
         return try context!.fetch(request)
+        
+    }
+    
+    func writeManyPersonObjectsToDataBase(completion: @escaping () -> Void) throws{
+        var context: NSManagedObjectContext?{
+            return (UIApplication.shared.delegate as? AppDelegate)?
+                .persistentContainer.newBackgroundContext()
+        }
+        context?.automaticallyMergesChangesFromParent = true
+        
+        context?.perform{
+            let howMany = 999
+            for index in 1...howMany{
+                let person = Person(context: context!)
+                person.firstName = "First name \(index)"
+                person.lastName = "Last name \(index)"
+            }
+            do{
+                try context!.save()
+                DispatchQueue.main.async { completion() }
+            }catch{
+                
+            }
+        }
+        
+    }
+    
+    
+    func countOfPersonObjectsWritten() throws -> Int{
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.resultType = .countResultType
+        var context: NSManagedObjectContext?{
+            return (UIApplication.shared.delegate as? AppDelegate)?
+                .persistentContainer.viewContext
+        }
+        
+        guard let result = (try context!.execute(request) as? NSAsynchronousFetchResult<NSNumber>)?.finalResult?.first as? Int else {return 0}
+        
+        return result
         
     }
 }

@@ -11,16 +11,49 @@ import CoreData
 
 class ViewController: UIViewController {
     
-    
+    let appDelegate = UIApplication.shared.delegate as! AppDelegate
+
 
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Do any additional setup after loading the view, typically from a nib.
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+
 
         
+        do{
+            try self.writeData()
+            do{
+                let person =  try self.readData()
+                print("Successfully read the person")
+                print(person.firstName ?? "")
+                print(person.lastName ?? "")
+                
+                if let cars = person.cars?.allObjects as? [Car], cars.count > 0{
+                    cars.enumerated().forEach{offset, car in
+                        print("Car #\(offset + 1)")
+                        print(car.maker ?? "")
+                        print(car.model ?? "")
+                    }
+                }
+
+            }catch{
+                print("Could not read the data")
+
+            }
+        }catch{
+            print("Could not write the data")
+        }
+
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
+    }
+    
+    func writeData() throws{
         var context: NSManagedObjectContext?{
             return (UIApplication.shared.delegate as? AppDelegate)?
                 .persistentContainer.viewContext
@@ -34,15 +67,34 @@ class ViewController: UIViewController {
             Car(context: context!).configured(maker: "VW", model: "Tiguan", owner: person)
             ])
         
-        appDelegate.saveContext()
-
+        try appDelegate.saveContext()
+        
+    }
+    
+    func readData() throws -> Person{
+        var context: NSManagedObjectContext?{
+            return (UIApplication.shared.delegate as? AppDelegate)?
+                .persistentContainer.viewContext
+        }
+        
+        let personFetchRequest: NSFetchRequest<Person> = Person.fetchRequest()
+        personFetchRequest.fetchLimit = 1
+        personFetchRequest.relationshipKeyPathsForPrefetching = ["cars"]
+        
+        let persons = try context!.fetch(personFetchRequest)
+    
+        guard let person = persons.first,
+            persons.count == personFetchRequest.fetchLimit else {
+                throw ReadDataExceptions.moreThanOnePersonComeBack
+        }
+        
+        return person
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
 
+}
 
+enum ReadDataExceptions : Error {
+    case moreThanOnePersonComeBack
 }
 

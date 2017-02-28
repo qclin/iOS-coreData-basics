@@ -91,7 +91,42 @@ class ViewController: UIViewController {
         return person
     }
 
-
+    func personsWith(firstName fName: String,
+                     lastName lName: String) throws -> [Person]?{
+        var context: NSManagedObjectContext?{
+            return (UIApplication.shared.delegate as? AppDelegate)?
+                .persistentContainer.viewContext
+        }
+        
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.predicate = NSPredicate(format: "firstName == %@ && lastName == %@", argumentArray: [fName, lName])
+        
+        return try context!.fetch(request)
+    }
+    
+    func personsWith(fistNameFirstCharacter char: Character) throws -> [Person]?{
+        var context: NSManagedObjectContext?{
+            return (UIApplication.shared.delegate as? AppDelegate)?
+                .persistentContainer.viewContext
+        }
+        
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.predicate = NSPredicate(format: "firstName LIKE[c] %@", argumentArray: ["\(char)*"])
+        
+        return try context!.fetch(request)
+    }
+    
+    func personWith(atLeastOneCarWithMaker maker: String) throws -> [Person]? {
+        var context: NSManagedObjectContext?{
+            return (UIApplication.shared.delegate as? AppDelegate)?
+                .persistentContainer.viewContext
+        }
+        let request: NSFetchRequest<Person> = Person.fetchRequest()
+        request.relationshipKeyPathsForPrefetching = ["cars"]
+        request.predicate = NSPredicate(format:"ANY cars.maker ==[c] %@", argumentArray: [maker])
+        return try context!.fetch(request)
+        
+    }
 }
 
 enum ReadDataExceptions : Error {

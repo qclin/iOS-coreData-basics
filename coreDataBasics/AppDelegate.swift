@@ -17,6 +17,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
         return true
     }
 
@@ -75,7 +76,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     // MARK: - Core Data Saving support
 
-    func saveContext () {
+    func saveContext () throws{
         let context = persistentContainer.viewContext
         if context.hasChanges {
             do {
@@ -88,6 +89,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
     }
+}
 
+extension Car{
+    func configured(maker _maker: String,
+                    model _model: String,
+                    owner _owner: Person) -> Self{
+        maker = _maker
+        model = _model
+        owner = _owner
+        return self
+    }
 }
 

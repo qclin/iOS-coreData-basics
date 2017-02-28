@@ -7,12 +7,35 @@
 //
 
 import UIKit
+import CoreData
 
 class ViewController: UIViewController {
+    
+    
 
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         // Do any additional setup after loading the view, typically from a nib.
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+
+        
+        var context: NSManagedObjectContext?{
+            return (UIApplication.shared.delegate as? AppDelegate)?
+                .persistentContainer.viewContext
+        }
+        
+        let person = Person(context: context!)
+        person.firstName = "Foo"
+        person.lastName = "Bar"
+        person.cars = NSSet(array: [
+            Car(context: context!).configured(maker: "VW", model: "Sharan", owner: person),
+            Car(context: context!).configured(maker: "VW", model: "Tiguan", owner: person)
+            ])
+        
+        appDelegate.saveContext()
+
     }
 
     override func didReceiveMemoryWarning() {
